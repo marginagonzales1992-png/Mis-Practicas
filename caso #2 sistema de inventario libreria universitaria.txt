@@ -1,0 +1,68 @@
+import simpy
+import random
+
+# Parámetros
+TIEMPO_SIMULACION = 30
+TIEMPO_PRODUCCION_LOTE = 0.5
+TIEMPO_REPARACION = 0.2
+PROB_FALLA = 0.15
+PROB_RECHAZO_CALIDAD = 0.1
+PRODUCCION_MINIMA = 500
+
+lotes_aprobados = 0
+lotes_rechazados = 0
+unidades_producidas = 0
+
+
+def produccion(env):
+    global lotes_aprobados
+    global lotes_rechazados
+    global unidades_producidas
+
+    lote = 0
+
+    while env.now < TIEMPO_SIMULACION:
+
+        yield env.timeout(TIEMPO_PRODUCCION_LOTE)
+
+        lote += 1
+
+        print(f"Día {env.now:.2f}: Lote {lote} producido.")
+
+        # Falla de máquina
+        if random.random() < PROB_FALLA:
+            print(
+                f"Día {env.now:.2f}: FALLA en máquina. Reparación en proceso..."
+            )
+
+            yield env.timeout(TIEMPO_REPARACION)
+
+            print(
+                f"Día {env.now:.2f}: Máquina reparada."
+            )
+
+        # Control de calidad
+        if random.random() < PROB_RECHAZO_CALIDAD:
+            lotes_rechazados += 1
+            print(
+                f"Día {env.now:.2f}: Lote {lote} RECHAZADO en control de calidad."
+            )
+        else:
+            lotes_aprobados += 1
+            unidades_producidas += PRODUCCION_MINIMA
+
+            print(
+                f"Día {env.now:.2f}: Lote {lote} APROBADO."
+            )
+
+
+env = simpy.Environment()
+
+env.process(produccion(env))
+
+env.run(until=TIEMPO_SIMULACION)
+
+print("\n===== RESULTADOS =====")
+print("Lotes aprobados:", lotes_aprobados)
+print("Lotes rechazados:", lotes_rechazados)
+print("Unidades producidas:", unidades_producidas)
